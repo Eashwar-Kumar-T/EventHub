@@ -344,12 +344,6 @@ Contributions are welcome! Please follow these steps:
 
 This project is licensed under the MIT License.
 
-## 👨‍💻 Author
-
-**Your Name**
-- GitHub: [@yourusername](https://github.com/yourusername)
-- Email: your.email@example.com
-
 ## 🙏 Acknowledgments
 
 - [React](https://react.dev/)
@@ -359,10 +353,3 @@ This project is licensed under the MIT License.
 - [Heroicons](https://heroicons.com/)
 - [AWS Amplify](https://aws.amazon.com/amplify/)
 
-## 📞 Support
-
-For support, email your.email@example.com or create an issue in the repository.
-
----
-
-**Made with ❤️ for amazing event planning experiences**
