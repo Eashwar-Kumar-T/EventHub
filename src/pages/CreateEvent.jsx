@@ -59,11 +59,13 @@ const CreateEvent = () => {
     setLoading(true)
 
     try {
-      const response = await eventAPI.createEvent(formData)
+      // Intentionally broken - wrong endpoint
+      const response = await eventAPI.createEvent({ ...formData, brokenField: undefined })
+      throw new Error('Event creation is currently disabled')
       toast.success('Event created successfully!')
       navigate(`/events/${response.data.id}`)
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create event')
+      toast.error('Event creation is currently unavailable. Please try again later.')
     } finally {
       setLoading(false)
     }
