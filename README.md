@@ -2,7 +2,6 @@
 
 A modern, full-featured event planning application built with React, Vite, and Tailwind CSS. EventHub connects to a serverless backend (AWS Lambda + API Gateway) and integrates Gemini AI for intelligent event planning assistance.
 
-![EventHub](https://via.placeholder.com/1200x400/0ea5e9/ffffff?text=EventHub+-+Event+Planning+Made+Easy)
 
 ## ✨ Features
 
