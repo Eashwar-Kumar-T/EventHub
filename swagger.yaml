@@ -1,0 +1,689 @@
+openapi: 3.0.0
+info:
+  title: EventHub API
+  description: Complete event management platform with ticketing, RSVPs, and messaging
+  version: 1.0.0
+  contact:
+    name: EventHub Support
+
+servers:
+  - url: https://qggylh9gyl.execute-api.ap-south-1.amazonaws.com/dev
+    description: Production AWS Lambda API
+
+tags:
+  - name: Authentication
+    description: User registration and login
+  - name: Events
+    description: Event management operations
+  - name: RSVPs
+    description: RSVP management for events
+  - name: Tickets
+    description: Ticket booking and management
+  - name: Messages
+    description: Event messaging system
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token received from login/register
+
+  schemas:
+    User:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+
+    Event:
+      type: object
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        hostId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        eventDate:
+          type: string
+          format: date-time
+        location:
+          type: string
+        capacity:
+          type: integer
+        availableSeats:
+          type: integer
+        ticketPrice:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    RSVP:
+      type: object
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        userName:
+          type: string
+        status:
+          type: string
+          enum: [yes, no, maybe]
+        updatedAt:
+          type: string
+          format: date-time
+
+    Ticket:
+      type: object
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        bookingId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+        pricePerTicket:
+          type: integer
+        totalPrice:
+          type: integer
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Message:
+      type: object
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        messageId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        userName:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Create a new user account and receive authentication token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - name
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                name:
+                  type: string
+                  example: John Doe
+                password:
+                  type: string
+                  format: password
+                  example: SecurePass123
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  userId:
+                    type: string
+                    format: uuid
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticate user and receive JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePass123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  userId:
+                    type: string
+                    format: uuid
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Retrieve authenticated user's profile information
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events:
+    get:
+      tags:
+        - Events
+      summary: List all events
+      description: Retrieve all events in the system
+      responses:
+        '200':
+          description: Events retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+
+    post:
+      tags:
+        - Events
+      summary: Create new event
+      description: Create a new event (requires authentication)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - eventDate
+              properties:
+                title:
+                  type: string
+                  example: Summer Music Festival
+                description:
+                  type: string
+                  example: Annual outdoor music festival
+                eventDate:
+                  type: string
+                  format: date-time
+                  example: '2026-07-15T18:00:00Z'
+                location:
+                  type: string
+                  example: Central Park, NYC
+                capacity:
+                  type: integer
+                  example: 500
+                ticketPrice:
+                  type: integer
+                  example: 50
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventId:
+                    type: string
+                    format: uuid
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events/{eventId}:
+    get:
+      tags:
+        - Events
+      summary: Get event details
+      description: Retrieve detailed information about a specific event
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Events
+      summary: Update event
+      description: Update event details (only event host)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                eventDate:
+                  type: string
+                  format: date-time
+                location:
+                  type: string
+                ticketPrice:
+                  type: integer
+      responses:
+        '200':
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - not event host
+        '404':
+          description: Event not found
+
+    delete:
+      tags:
+        - Events
+      summary: Delete event
+      description: Delete an event (only event host)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - not event host
+        '404':
+          description: Event not found
+
+  /events/{eventId}/availability:
+    get:
+      tags:
+        - Events
+      summary: Check event availability
+      description: Get real-time seat availability and ticket price
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Availability information retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  availableSeats:
+                    type: integer
+                  ticketPrice:
+                    type: integer
+        '404':
+          description: Event not found
+
+  /users/me/events:
+    get:
+      tags:
+        - Events
+      summary: Get my hosted events
+      description: Retrieve all events hosted by the authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Hosted events retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+        '401':
+          description: Unauthorized
+
+  /events/{eventId}/rsvp:
+    post:
+      tags:
+        - RSVPs
+      summary: RSVP to event
+      description: Create or update RSVP status for an event
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [yes, no, maybe]
+                  example: yes
+      responses:
+        '200':
+          description: RSVP updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Invalid RSVP status
+        '401':
+          description: Unauthorized
+
+  /events/{eventId}/rsvps:
+    get:
+      tags:
+        - RSVPs
+      summary: List event RSVPs
+      description: Get all RSVPs for an event (authentication required)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: RSVPs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RSVP'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Event not found
+
+  /events/{eventId}/tickets:
+    post:
+      tags:
+        - Tickets
+      summary: Book tickets
+      description: Book tickets for an event with specified quantity
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                  example: 2
+      responses:
+        '201':
+          description: Tickets booked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  bookingId:
+                    type: string
+                    format: uuid
+                  quantity:
+                    type: integer
+                  pricePerTicket:
+                    type: integer
+                  totalPrice:
+                    type: integer
+        '400':
+          description: Invalid quantity or not enough seats
+        '401':
+          description: Unauthorized
+        '404':
+          description: Event not found
+
+  /users/me/tickets:
+    get:
+      tags:
+        - Tickets
+      summary: Get my tickets
+      description: Retrieve all tickets booked by the authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Tickets retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ticket'
+        '401':
+          description: Unauthorized
+
+  /events/{eventId}/messages:
+    get:
+      tags:
+        - Messages
+      summary: Get event messages
+      description: Retrieve all messages for an event
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Messages retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+
+    post:
+      tags:
+        - Messages
+      summary: Send message
+      description: Post a message to an event
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  example: Looking forward to this event!
+      responses:
+        '201':
+          description: Message posted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageId:
+                    type: string
+                    format: uuid
+        '401':
+          description: Unauthorized
