@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { eventAPI } from '../services/api'
 import { geminiService } from '../services/geminiAI'
@@ -39,6 +39,12 @@ const CreateEvent = () => {
     'Networking',
     'Other',
   ]
+
+  // Get today's date in YYYY-MM-DD format for min date restriction
+  const minDate = useMemo(() => {
+    const today = new Date()
+    return today.toISOString().split('T')[0]
+  }, [])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -96,10 +102,12 @@ const CreateEvent = () => {
       const suggestions = await geminiService.suggestEventDates(
         formData.eventType,
         formData.capacity || 50,
-        'Weekend preferred'
+        formData.title || ''
       )
 
       if (suggestions.length > 0) {
+        // Auto-fill the first suggested date
+        setFormData({ ...formData, date: suggestions[0].date })
         toast.success(`Suggested Date: ${suggestions[0].date}\nReason: ${suggestions[0].reason}`, {
           duration: 6000,
         })
@@ -214,6 +222,7 @@ const CreateEvent = () => {
                   id="date"
                   name="date"
                   required
+                  min={minDate}
                   value={formData.date}
                   onChange={handleChange}
                   className="input-field pl-10"

@@ -18,17 +18,32 @@ if (GEMINI_API_KEY) {
 
 export const geminiService = {
   // Suggest optimal event dates
-  suggestEventDates: async (eventType, guestCount, preferences = '') => {
+  suggestEventDates: async (eventType, guestCount, eventTitle = '') => {
     if (!model) throw new Error('Gemini API key not configured')
+
+    // Get current date and calculate future date range
+    const today = new Date()
+    const currentDate = today.toISOString().split('T')[0]
+    const threeMonthsLater = new Date(today.setMonth(today.getMonth() + 3)).toISOString().split('T')[0]
 
     const prompt = `As an event planning expert, suggest 3 optimal dates for the following event:
     - Event Type: ${eventType}
+    - Event Title: ${eventTitle || 'Not specified'}
     - Expected Guests: ${guestCount}
-    - Additional Preferences: ${preferences || 'None'}
+    - Current Date: ${currentDate}
     
-    Consider seasonal factors, common availability patterns, and event planning best practices.
-    Provide dates in the next 3 months with brief reasoning for each.
-    Format the response as JSON array with structure: [{ date: "YYYY-MM-DD", reason: "explanation" }]`
+    IMPORTANT RULES:
+    1. ALL suggested dates MUST be AFTER ${currentDate} (no past dates allowed)
+    2. Suggest dates between ${currentDate} and ${threeMonthsLater}
+    3. For conferences/seminars: Suggest midweek dates (Tue-Thu) with 3-6 weeks planning time
+    4. For workshops: Suggest weekends with 2-4 weeks planning time
+    5. For meetups/networking: Suggest weekday evenings (Wed-Thu) with 1-3 weeks planning time
+    6. For parties/concerts: Suggest Friday/Saturday nights with 2-4 weeks planning time
+    7. If title contains "AI", "Tech", or "Data", cluster dates closer together to create a series feel
+    8. Consider seasonal factors and avoid major holidays
+    
+    Format the response as JSON array with structure: [{ date: "YYYY-MM-DD", reason: "explanation" }]
+    Ensure ALL dates are in YYYY-MM-DD format and are future dates AFTER ${currentDate}.`
 
     try {
       const result = await model.generateContent(prompt)
